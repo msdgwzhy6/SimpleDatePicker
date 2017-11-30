@@ -1,20 +1,21 @@
 package com.xiaolei.datepicker;
 
 import android.content.Context;
-import android.graphics.Color;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.xiaolei.datepicker.DateUtil.*;
 
 /**
  * Created by xiaolei on 2017/11/30.
@@ -26,6 +27,7 @@ public class DatePickerView extends ListView
     private DateAdapter adapter = new DateAdapter(month);
     private Date nowDate = new Date();//当前日历显示的时间
     private Adapter outAdapter = null;
+    private OnDateItemClickListener listener;
 
     public DatePickerView(Context context)
     {
@@ -64,6 +66,11 @@ public class DatePickerView extends ListView
             date.setDate(date.getDate() + 7);//加七天
         }
         adapter.notifyDataSetChanged();
+    }
+
+    public Date getDate()
+    {
+        return new Date(nowDate.getTime());
     }
 
     /**
@@ -144,6 +151,26 @@ public class DatePickerView extends ListView
     public void setAdapter(Adapter adapter)
     {
         outAdapter = adapter;
+        setDate(nowDate);
+    }
+
+    /**
+     * 屏蔽系统默认的ItemClickListener
+     * @param listener
+     */
+    @Override
+    public void setOnItemClickListener(@Nullable OnItemClickListener listener)
+    {
+        // super.setOnItemClickListener(listener);
+    }
+
+    /**
+     * 设置每个时间点击事件
+     * @param listener
+     */
+    public void setonDateItemClickListener(OnDateItemClickListener listener)
+    {
+        this.listener = listener;
     }
 
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
@@ -154,6 +181,18 @@ public class DatePickerView extends ListView
 
     private class DateAdapter extends BaseAdapter<WeekBean, BaseAdapter.Holder>
     {
+        private OnClickListener itemClickListener = new OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                Date date = (Date) view.getTag(R.id.item_data);
+                if(listener != null)
+                {
+                    listener.onClick(view,date);
+                }
+            }
+        };
         public DateAdapter(List<WeekBean> list)
         {
             super(list);
@@ -163,9 +202,8 @@ public class DatePickerView extends ListView
         public Holder onCreateViewHolder(ViewGroup parent, int viewType)
         {
             LinearLayout viewGroup = new LinearLayout(parent.getContext());
-            ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            AbsListView.LayoutParams params = new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             viewGroup.setLayoutParams(params);
-            // ViewGroup viewGroup = (ViewGroup) View.inflate(parent.getContext(), R.layout.item_date_week, null);
             LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
             if (outAdapter != null)
             {
@@ -180,6 +218,10 @@ public class DatePickerView extends ListView
                     }catch (Exception e)
                     {
                         throw new RuntimeException("getView中，请这么写：View view = inflater.inflate(R.layout.item_date_tv, parent, false)");
+                    }
+                    if(!childView.hasOnClickListeners()) // 如果没有设置点击事件
+                    {
+                        childView.setOnClickListener(itemClickListener);
                     }
                     viewGroup.addView(childView);
                 }
@@ -204,24 +246,31 @@ public class DatePickerView extends ListView
                     {
                         case 0:
                             outAdapter.onBindViewHolder(childHolder, data.SUN.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.SUN.date.getTime()));
                             break;
                         case 1:
                             outAdapter.onBindViewHolder(childHolder, data.MON.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.MON.date.getTime()));
                             break;
                         case 2:
                             outAdapter.onBindViewHolder(childHolder, data.TUE.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.TUE.date.getTime()));
                             break;
                         case 3:
                             outAdapter.onBindViewHolder(childHolder, data.WED.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.WED.date.getTime()));
                             break;
                         case 4:
                             outAdapter.onBindViewHolder(childHolder, data.THU.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.THU.date.getTime()));
                             break;
                         case 5:
                             outAdapter.onBindViewHolder(childHolder, data.FRI.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.FRI.date.getTime()));
                             break;
                         case 6:
                             outAdapter.onBindViewHolder(childHolder, data.SAT.date, nowDate);
+                            childView.setTag(R.id.item_data,new Date(data.SAT.date.getTime()));
                             break;
                     }
                 }
@@ -298,123 +347,5 @@ public class DatePickerView extends ListView
         public String weekName;//星期几
     }
 
-    /**
-     * 根据日期取得星期几
-     */
-    public static String getWeek(Date date)
-    {
-        String[] weeks = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        int week_index = cal.get(Calendar.DAY_OF_WEEK) - 1;
-        if (week_index < 0)
-        {
-            week_index = 0;
-        }
-        return weeks[week_index];
-    }
 
-    /**
-     * 获取某天的那个月，一共有几天
-     *
-     * @param date
-     * @return
-     */
-    public static int getDayCountOfMonth(Date date)
-    {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.YEAR, date.getYear() + 1900);
-        cal.set(Calendar.MONTH, date.getMonth());//Java月份才0开始算 
-        return cal.getActualMaximum(Calendar.DATE);
-    }
-
-    /**
-     * 根据输入的年月日，得到一个Date对象
-     *
-     * @param year
-     * @param month
-     * @param day
-     * @return
-     */
-    public static Date getDate(int year, int month, int day)
-    {
-        Date date = new Date();
-        date.setYear(year - 1900);
-        date.setMonth(month - 1);
-        date.setDate(day);
-        return date;
-    }
-
-    /**
-     * 根据输入的年月，得到一个Date对象
-     *
-     * @param year
-     * @param month
-     * @return
-     */
-    public static Date getDate(int year, int month)
-    {
-        return getDate(year, month, 1);
-    }
-
-
-    public static abstract class Adapter
-    {
-        /**
-         * 实例化UI，每个日期的UI碎片
-         *
-         * @param inflater
-         * @param parent
-         * @return
-         */
-        public abstract View getView(LayoutInflater inflater, ViewGroup parent);
-
-        /**
-         * 对每个UI碎片进行初始化
-         *
-         * @param holder       UI碎片的ViewHolder
-         * @param date         当前这个UI碎片的日期
-         * @param nowMonthDate 当前月份的日期
-         */
-        public abstract void onBindViewHolder(BaseAdapter.Holder holder, Date date, Date nowMonthDate);
-    }
-
-    public static class DefaultAdapter extends Adapter
-    {
-        /**
-         * 实例化UI，每个日期的UI碎片
-         *
-         * @param inflater
-         * @param parent
-         * @return
-         */
-        @Override
-        public View getView(LayoutInflater inflater, ViewGroup parent)
-        {
-            View view = inflater.inflate(R.layout.item_date_tv, parent, false);
-            return view;
-        }
-
-        /**
-         * 对每个UI碎片进行初始化
-         *
-         * @param holder       UI碎片的ViewHolder
-         * @param date         当前这个UI碎片的日期
-         * @param nowMonthDate 当前月份的日期
-         */
-        @Override
-        public void onBindViewHolder(BaseAdapter.Holder holder, Date date, Date nowMonthDate)
-        {
-            TextView textView = holder.get(R.id.tv);
-            textView.setText(date.getDate() + "");
-
-            if (date.getMonth() == nowMonthDate.getMonth())//如果是当前月
-            {
-                textView.setTextColor(Color.parseColor("#353535"));
-            } else
-            {
-                textView.setTextColor(Color.parseColor("#999999"));
-            }
-        }
-    }
 }

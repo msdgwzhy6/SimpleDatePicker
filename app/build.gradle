@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'//这里添加
+apply plugin: 'kotlin-android-extensions'//这里添加
 
 android {
     compileSdkVersion 26
@@ -20,4 +22,6 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(':datepicker')
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"//主要是这两个依赖
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"//主要是这两个依赖
 }
